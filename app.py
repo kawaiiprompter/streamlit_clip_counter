@@ -126,7 +126,7 @@ def draw_html(text_list):
     st.write(" | ".join(html_list), unsafe_allow_html=True)
 
 def main():
-    prompt = st.text_input("プロンプトを入力")
+    prompt = st.text_area("プロンプトを入力")
 
     bpe_tokens = get_token(prompt)
     model_max_length = 77
