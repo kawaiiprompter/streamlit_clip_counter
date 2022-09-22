@@ -4,6 +4,8 @@ from functools import lru_cache
 import regex as re
 import ftfy
 
+import streamlit as st
+
 def whitespace_clean(text):
     text = re.sub(r"\s+", " ", text)
     text = text.strip()
@@ -114,7 +116,15 @@ def get_token(text):
         bpe_tokens.extend(bpe_token for bpe_token in bpe.bpe(token).split(" "))
     return bpe_tokens
 
-import streamlit as st
+def draw_html(text_list):
+    html_list = []
+    for i, word in enumerate(text_list):
+        if i % 2==0:
+            html_list.append(f'<div style="color:coral; display: inline-block; _display: inline;">{word}</div>')
+        else:
+            html_list.append(f'<div style="color:darkgray; display: inline-block; _display: inline;">{word}</div>')
+    st.write(" | ".join(html_list), unsafe_allow_html=True)
+
 def main():
     prompt = st.text_input("プロンプトを入力")
 
@@ -123,12 +133,10 @@ def main():
     text_size = len(bpe_tokens)
     max_size = model_max_length - 2
     st.text(f"size: {text_size} / {max_size}")
-    text_str = "\n".join(bpe_tokens[0:model_max_length-2])
-    st.text(text_str)
+    draw_html(bpe_tokens[0:model_max_length-2])
     if len(bpe_tokens) >= model_max_length-2:
         st.text("--- over ---")
-        ext_text_str = "\n".join(bpe_tokens[model_max_length-2:])
-        st.text(ext_text_str)
+        draw_html(bpe_tokens[model_max_length-2:])
 
 if __name__ == "__main__":
     main()
