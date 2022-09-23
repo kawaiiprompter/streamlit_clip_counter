@@ -126,17 +126,24 @@ def draw_html(text_list):
     st.write(" | ".join(html_list), unsafe_allow_html=True)
 
 def main():
-    prompt = st.text_area("プロンプトを入力")
+    prompt = st.text_area("プロンプトを入力（右下からサイズ変更可能）")
 
-    bpe_tokens = get_token(prompt)
-    model_max_length = 77
-    text_size = len(bpe_tokens)
-    max_size = model_max_length - 2
-    st.text(f"size: {text_size} / {max_size}")
-    draw_html(bpe_tokens[0:model_max_length-2])
-    if len(bpe_tokens) >= model_max_length-2:
-        st.text("--- over ---")
-        draw_html(bpe_tokens[model_max_length-2:])
+    if prompt != "":
+        bpe_tokens = get_token(prompt)
+        model_max_length = 77
+        text_size = len(bpe_tokens)
+        max_size = model_max_length - 2
+        st.text(f"#token: {text_size} / {max_size}")
+        draw_html(bpe_tokens[0:model_max_length-2])
+        if len(bpe_tokens) >= model_max_length-2:
+            st.text("--- over ---")
+            draw_html(bpe_tokens[model_max_length-2:])
+        
+        st.markdown("---")
+        st.text("コピペ用（オリジナルから改行を空白、２つ以上の空白を１つに変換）")
+        reformat = re.sub("\n", " ", prompt)
+        reformat = re.sub(" +", " ", reformat)
+        st.code(reformat)
 
 if __name__ == "__main__":
     main()
