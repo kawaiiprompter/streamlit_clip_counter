@@ -182,6 +182,9 @@ def draw_html_diff(text_diff):
     st.write("".join(html_list), unsafe_allow_html=True)
 
 
+# 最大履歴
+max_history = 25
+
 def main():
     prompt = st.text_area("プロンプトを入力（右下からサイズ変更可能）", height=130)
 
@@ -197,7 +200,8 @@ def main():
             draw_html_prompt(bpe_tokens[model_max_length-2:])
         
         st.markdown("---")
-        st.text("コピー用（改行を空白に変換、２つ以上の空白を１つに変換）")
+        st.markdown("### コピー")
+        st.text("※改行を空白に変換、２つ以上の空白を１つに変換")
         reformat = reformat_prompt(prompt)
         st.code(reformat)
         if st.button("履歴に一時保存"):
@@ -207,15 +211,15 @@ def main():
             }
             if "storage" in st.session_state:
                 st.session_state["storage"].append(data)
-                if len(st.session_state["storage"]) > 10:
+                if len(st.session_state["storage"]) > max_history:
                     st.session_state["storage"].pop(0)
             else:
                 st.session_state["storage"] = [data]
-        st.text("※保存したものは再接続時には消えるのでご注意ください")
+        st.text("※一時保存したものは再接続時には消えるのでご注意ください")
         
     if "storage" in st.session_state:
         st.markdown("---")
-        st.text("履歴")
+        st.markdown(f"### 履歴(最大{max_history})")
         flg_diff = st.checkbox("差分を表示（空白は_に変換されます）", value=False)
         if flg_diff:
             reformat = reformat_prompt(prompt)
