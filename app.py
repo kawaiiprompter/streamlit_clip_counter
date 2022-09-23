@@ -174,9 +174,9 @@ def draw_html_diff(text_diff):
             if word == " ":
                 word = "_"
         if flg == "-":
-            html_list.append(f'<span style="color:blue;">{word}</span>')
+            html_list.append(f'<span style="color:royalblue;">{word}</span>')
         elif flg == "+":
-            html_list.append(f'<span style="color:red;">{word}</span>')
+            html_list.append(f'<span style="color:orangered;">{word}</span>')
         else:
             html_list.append(f'<span style="color:darkgray;">{word}</span>')
     st.write("".join(html_list), unsafe_allow_html=True)
@@ -186,24 +186,22 @@ def draw_html_diff(text_diff):
 max_history = 25
 
 def main():
-    prompt = st.text_area("プロンプトを入力（右下からサイズ変更可能）", height=130)
+    prompt = st.text_area("プロンプトを入力（ボックス右下からサイズ変更可能）", height=130)
 
     if prompt != "":
         bpe_tokens = get_token(prompt)
         model_max_length = 77
         text_size = len(bpe_tokens)
         max_size = model_max_length - 2
-        st.text(f"#token: {text_size} / {max_size}")
+        st.text(f"token数: {text_size} / {max_size}")
         draw_html_prompt(bpe_tokens[0:model_max_length-2])
         if len(bpe_tokens) >= model_max_length-2:
             st.text("--- over ---")
             draw_html_prompt(bpe_tokens[model_max_length-2:])
-        
-        st.markdown("---")
-        st.markdown("### コピー")
-        st.text("※改行を空白に変換、２つ以上の空白を１つに変換")
+        st.text("\n")
+        st.text("コピー用（改行を空白に変換、２つ以上の空白を１つに変換）")
         reformat = reformat_prompt(prompt)
-        st.code(reformat)
+        st.code(reformat, language="")
         if st.button("履歴に一時保存"):
             data = {
                 "date": get_current_time(),
@@ -215,20 +213,20 @@ def main():
                     st.session_state["storage"].pop(0)
             else:
                 st.session_state["storage"] = [data]
-        st.text("※一時保存したものは再接続時には消えるのでご注意ください")
+        st.text("※一時保存はサーバには保存されず再接続時には消えるのでご注意ください")
         
     if "storage" in st.session_state:
         st.markdown("---")
-        st.markdown(f"### 履歴(最大{max_history})")
-        flg_diff = st.checkbox("差分を表示（空白は_に変換されます）", value=False)
-        if flg_diff:
+        st.markdown(f"### 履歴")
+        st.text("※最大25個で古いものから消えていきます/差分では空白は_に変換されます")
+        if prompt != "":
             reformat = reformat_prompt(prompt)
         for data in st.session_state["storage"][::-1]:
             st.markdown(f'**{data["date"]}**')
-            st.code(data["prompt"])
-            if flg_diff:
+            if prompt != "":
                 diff = get_diff(reformat, data["prompt"])
                 draw_html_diff(diff)
+            st.code(data["prompt"], language="")
 
 if __name__ == "__main__":
     main()
