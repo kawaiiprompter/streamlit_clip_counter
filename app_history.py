@@ -153,6 +153,9 @@ def reformat_prompt(prompt):
 def draw_html_prompt(text_list):
     html_list = []
     for i, word in enumerate(text_list):
+        word = word.replace("</w>", "")
+        if word == "_":
+            word = "\_"
         if i % 2==0:
             # html_list.append(f'<div style="color:coral; display: inline-block; _display: inline;">{word}</div>')
             html_list.append(f'<span style="color:coral;">{word}</span>')
@@ -165,13 +168,14 @@ def draw_html_prompt(text_list):
 def draw_html_diff(text_diff):
     html_list = []
     for word, flg in text_diff:
-        if flg == "-":
+        if word == "_":
+            word = "\_"
+        if flg in ["+", "-"]:
             if word == " ":
                 word = "_"
+        if flg == "-":
             html_list.append(f'<span style="color:blue;">{word}</span>')
         elif flg == "+":
-            if word == " ":
-                word = "_"
             html_list.append(f'<span style="color:red;">{word}</span>')
         else:
             html_list.append(f'<span style="color:darkgray;">{word}</span>')
@@ -203,6 +207,8 @@ def main():
             }
             if "storage" in st.session_state:
                 st.session_state["storage"].append(data)
+                if len(st.session_state["storage"]) > 10:
+                    st.session_state["storage"].pop(0)
             else:
                 st.session_state["storage"] = [data]
         st.text("※保存したものは再接続時には消えるのでご注意ください")
