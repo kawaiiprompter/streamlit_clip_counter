@@ -116,14 +116,24 @@ def get_token(text):
         bpe_tokens.extend(bpe_token for bpe_token in bpe.bpe(token).split(" "))
     return bpe_tokens
 
-def draw_html(text_list):
+def draw_html_prompt(text_list):
     html_list = []
     for i, word in enumerate(text_list):
+        word = word.replace("</w>", "")
+        if word == "_":
+            word = "\_"
         if i % 2==0:
-            html_list.append(f'<div style="color:coral; display: inline-block; _display: inline;">{word}</div>')
+            # html_list.append(f'<div style="color:coral; display: inline-block; _display: inline;">{word}</div>')
+            html_list.append(f'<span style="color:coral;">{word}</span>')
         else:
-            html_list.append(f'<div style="color:darkgray; display: inline-block; _display: inline;">{word}</div>')
+            # html_list.append(f'<div style="color:darkgray; display: inline-block; _display: inline;">{word}</div>')
+            html_list.append(f'<span style="color:darkgray;">{word}</span>')
     st.write(" | ".join(html_list), unsafe_allow_html=True)
+
+def reformat_prompt(prompt):
+    reformat = re.sub("\n", " ", prompt)
+    reformat = re.sub(" +", " ", reformat)
+    return reformat
 
 def main():
     prompt = st.text_area("プロンプトを入力（右下からサイズ変更可能）")
@@ -134,15 +144,14 @@ def main():
         text_size = len(bpe_tokens)
         max_size = model_max_length - 2
         st.text(f"#token: {text_size} / {max_size}")
-        draw_html(bpe_tokens[0:model_max_length-2])
+        draw_html_prompt(bpe_tokens[0:model_max_length-2])
         if len(bpe_tokens) >= model_max_length-2:
             st.text("--- over ---")
-            draw_html(bpe_tokens[model_max_length-2:])
+            draw_html_prompt(bpe_tokens[model_max_length-2:])
         
         st.markdown("---")
-        st.text("コピペ用（オリジナルから改行を空白、２つ以上の空白を１つに変換）")
-        reformat = re.sub("\n", " ", prompt)
-        reformat = re.sub(" +", " ", reformat)
+        st.text("コピー用（改行を空白に変換、２つ以上の空白を１つに変換）")
+        reformat = reformat_prompt(prompt)
         st.code(reformat)
 
 if __name__ == "__main__":
