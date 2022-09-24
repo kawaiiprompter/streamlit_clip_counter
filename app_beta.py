@@ -1,15 +1,25 @@
 # copy from https://github.com/huggingface/transformers/blob/v4.22.1/src/transformers/models/clip/tokenization_clip.py
 
+import difflib
+import pytz
+import datetime
 from functools import lru_cache
-import regex as re
-import ftfy
 
+import ftfy
+import regex as re
 import streamlit as st
+
+def get_current_time():
+    tdatetime = datetime.datetime.now(pytz.timezone('Asia/Tokyo'))
+    tstr = tdatetime.strftime('%Y/%m/%d %H:%M')
+    return tstr
+
 
 def whitespace_clean(text):
     text = re.sub(r"\s+", " ", text)
     text = text.strip()
     return text
+
 
 pat = re.compile(r"<\|startoftext\|>|<\|endoftext\|>|'s|'t|'re|'ve|'m|'ll|'d|[\p{L}]+|[\p{N}]|[^\s\p{L}\p{N}]+", re.IGNORECASE,)
 
@@ -116,6 +126,30 @@ def get_token(text):
         bpe_tokens.extend(bpe_token for bpe_token in bpe.bpe(token).split(" "))
     return bpe_tokens
 
+
+def get_diff(a, b):
+    d = difflib.Differ()
+    diffs = list(d.compare(a, b))
+    sentence = []
+    flg_diff = diffs[0][0]
+    cache = diffs[0][2]
+    for diff in diffs[1:]:
+        if diff[0] == flg_diff:
+            cache += diff[2]
+        else:
+            sentence.append([cache, flg_diff])
+            flg_diff = diff[0]
+            cache = diff[2]
+    sentence.append([cache, flg_diff])
+    return sentence
+
+
+def reformat_prompt(prompt):
+    reformat = re.sub("\n", " ", prompt)
+    reformat = re.sub(" +", " ", reformat)
+    return reformat
+
+
 def draw_html_prompt(text_list):
     html_list = []
     for i, word in enumerate(text_list):
@@ -130,29 +164,69 @@ def draw_html_prompt(text_list):
             html_list.append(f'<span style="color:darkgray;">{word}</span>')
     st.write(" | ".join(html_list), unsafe_allow_html=True)
 
-def reformat_prompt(prompt):
-    reformat = re.sub("\n", " ", prompt)
-    reformat = re.sub(" +", " ", reformat)
-    return reformat
+
+def draw_html_diff(text_diff):
+    html_list = []
+    for word, flg in text_diff:
+        if word == "_":
+            word = "\_"
+        if flg in ["+", "-"]:
+            if word == " ":
+                word = "_"
+        if flg == "-":
+            html_list.append(f'<span style="color:royalblue;">{word}</span>')
+        elif flg == "+":
+            html_list.append(f'<span style="color:orangered;">{word}</span>')
+        else:
+            html_list.append(f'<span style="color:darkgray;">{word}</span>')
+    st.write("".join(html_list), unsafe_allow_html=True)
+
+
+# 最大履歴
+max_history = 25
 
 def main():
-    prompt = st.text_area("プロンプトを入力（右下からサイズ変更可能）")
+    prompt = st.text_area("プロンプトを入力（ボックス右下からサイズ変更可能）", height=130)
 
     if prompt != "":
         bpe_tokens = get_token(prompt)
         model_max_length = 77
         text_size = len(bpe_tokens)
         max_size = model_max_length - 2
-        st.text(f"#token: {text_size} / {max_size}")
+        st.text(f"token数: {text_size} / {max_size}")
         draw_html_prompt(bpe_tokens[0:model_max_length-2])
         if len(bpe_tokens) >= model_max_length-2:
             st.text("--- over ---")
             draw_html_prompt(bpe_tokens[model_max_length-2:])
-        
-        st.markdown("---")
+        st.text("\n")
         st.text("コピー用（改行を空白に変換、２つ以上の空白を１つに変換）")
         reformat = reformat_prompt(prompt)
-        st.code(reformat)
+        st.code(reformat, language="")
+        if st.button("履歴に一時保存"):
+            data = {
+                "date": get_current_time(),
+                "prompt": reformat
+            }
+            if "storage" in st.session_state:
+                st.session_state["storage"].append(data)
+                if len(st.session_state["storage"]) > max_history:
+                    st.session_state["storage"].pop(0)
+            else:
+                st.session_state["storage"] = [data]
+        st.text("※一時保存はサーバには保存されず再接続時には消えるのでご注意ください")
+        
+    if "storage" in st.session_state:
+        st.markdown("---")
+        st.markdown(f"### 履歴")
+        st.text("※最大25個で古いものから消えていきます/差分では空白は_に変換されます")
+        if prompt != "":
+            reformat = reformat_prompt(prompt)
+        for data in st.session_state["storage"][::-1]:
+            st.markdown(f'**{data["date"]}**')
+            if prompt != "":
+                diff = get_diff(reformat, data["prompt"])
+                draw_html_diff(diff)
+            st.code(data["prompt"], language="")
 
 if __name__ == "__main__":
     main()
