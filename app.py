@@ -202,31 +202,31 @@ def main():
         st.text("コピー用（改行を空白に変換、２つ以上の空白を１つに変換）")
         reformat = reformat_prompt(prompt)
         st.code(reformat, language="")
-        if st.button("履歴に一時保存"):
-            data = {
-                "date": get_current_time(),
-                "prompt": reformat
-            }
-            if "storage" in st.session_state:
-                st.session_state["storage"].append(data)
-                if len(st.session_state["storage"]) > max_history:
-                    st.session_state["storage"].pop(0)
-            else:
-                st.session_state["storage"] = [data]
-        st.text("※一時保存はサーバには保存されず再接続時には消えるのでご注意ください")
+        # if st.button("履歴に一時保存"):
+        #     data = {
+        #         "date": get_current_time(),
+        #         "prompt": reformat
+        #     }
+        #     if "storage" in st.session_state:
+        #         st.session_state["storage"].append(data)
+        #         if len(st.session_state["storage"]) > max_history:
+        #             st.session_state["storage"].pop(0)
+        #     else:
+        #         st.session_state["storage"] = [data]
+        # st.text("※一時保存はサーバには保存されず再接続時には消えるのでご注意ください")
         
-    if "storage" in st.session_state:
-        st.markdown("---")
-        st.markdown(f"### 履歴")
-        st.text("※最大25個で古いものから消えていきます/差分では空白は_に変換されます")
-        if prompt != "":
-            reformat = reformat_prompt(prompt)
-        for data in st.session_state["storage"][::-1]:
-            st.markdown(f'**{data["date"]}**')
-            if prompt != "":
-                diff = get_diff(reformat, data["prompt"])
-                draw_html_diff(diff)
-            st.code(data["prompt"], language="")
+    # if "storage" in st.session_state:
+    #     st.markdown("---")
+    #     st.markdown(f"### 履歴")
+    #     st.text("※最大25個で古いものから消えていきます/差分では空白は_に変換されます")
+    #     if prompt != "":
+    #         reformat = reformat_prompt(prompt)
+    #     for data in st.session_state["storage"][::-1]:
+    #         st.markdown(f'**{data["date"]}**')
+    #         if prompt != "":
+    #             diff = get_diff(reformat, data["prompt"])
+    #             draw_html_diff(diff)
+    #         st.code(data["prompt"], language="")
 
 if __name__ == "__main__":
     main()
