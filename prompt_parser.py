@@ -384,6 +384,6 @@ def parse_prompt_attention(text, mode):
 
 if __name__ == "__main__":
     import doctest
-    doctest.testmod(optionflags=doctest.NORMALIZE_WHITESPACE)
-else:
-    import torch  # doctest faster
+        doctest.testmod(optionflags=doctest.NORMALIZE_WHITESPACE)
+    else:
+        import torch  # doctest faster
