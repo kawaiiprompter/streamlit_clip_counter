@@ -196,21 +196,23 @@ def main():
             parsed_prompt = "".join([t for t, w in parse_prompt_attention(
                 prompt, "automatic"
                 )])
+            max_size = 75 * 3
         elif mode_input == "NovelAI":
             parsed_prompt = "".join([t for t, w in parse_prompt_attention(
                 prompt, "novelai"
                 )])
+            max_size = 75 * 3
         else:
             parsed_prompt = prompt
+            max_size = 75
+
         bpe_tokens = get_token(parsed_prompt)
-        model_max_length = 77
         text_size = len(bpe_tokens)
-        max_size = model_max_length - 2
         st.text(f"token数: {text_size} / {max_size}")
-        draw_html_prompt(bpe_tokens[0:model_max_length-2])
-        if len(bpe_tokens) >= model_max_length-2:
+        draw_html_prompt(bpe_tokens[0:max_size])
+        if len(bpe_tokens) >= max_size:
             st.text("--- over ---")
-            draw_html_prompt(bpe_tokens[model_max_length-2:])
+            draw_html_prompt(bpe_tokens[max_size:])
         st.text("\n")
         st.text("コピー用（改行を空白に変換、２つ以上の空白を１つに変換）")
         mode_replace = st.radio("プロンプトの変換", ["なし", "for AUTOMATIC1111: {}->()", "for NovelAI: ()->{}", "({[]})を消す"], horizontal=True)
