@@ -190,6 +190,10 @@ max_history = 25
 def main():
     # setting
     mode_input = st.radio("モード", ["Original", "AUTOMATIC1111", "NovelAI"], horizontal=True)
+    if mode_input == "NovelAI":
+        add_quality_tags = st.checkbox("Add Quality Tags (+5)", value=True)
+    else:
+        add_quality_tags = False
     prompt = st.text_area("プロンプトを入力（ボックス右下からサイズ変更可能）", height=130)
     if prompt != "":
         if mode_input == "AUTOMATIC1111":
@@ -208,6 +212,8 @@ def main():
 
         bpe_tokens = get_token(parsed_prompt)
         text_size = len(bpe_tokens)
+        if add_quality_tags:
+            text_size += 5
         st.text(f"token数: {text_size} / {max_size}")
         draw_html_prompt(bpe_tokens[0:max_size])
         if len(bpe_tokens) >= max_size:
