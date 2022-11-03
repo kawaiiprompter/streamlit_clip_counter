@@ -9,6 +9,8 @@ import ftfy
 import regex as re
 import streamlit as st
 
+from prompt_parser import parse_prompt_attention
+
 def get_current_time():
     tdatetime = datetime.datetime.now(pytz.timezone('Asia/Tokyo'))
     tstr = tdatetime.strftime('%Y/%m/%d %H:%M')
@@ -186,10 +188,21 @@ def draw_html_diff(text_diff):
 max_history = 25
 
 def main():
+    # setting
+    mode_input = st.radio("モード", ["Original", "AUTOMATIC1111", "NovelAI"], horizontal=True)
     prompt = st.text_area("プロンプトを入力（ボックス右下からサイズ変更可能）", height=130)
-
     if prompt != "":
-        bpe_tokens = get_token(prompt)
+        if mode_input == "AUTOMATIC1111":
+            parsed_prompt = "".join([t for t, w in parse_prompt_attention(
+                prompt, "automatic"
+                )])
+        elif mode_input == "NovelAI":
+            parsed_prompt = "".join([t for t, w in parse_prompt_attention(
+                prompt, "novelai"
+                )])
+        else:
+            parsed_prompt = prompt
+        bpe_tokens = get_token(parsed_prompt)
         model_max_length = 77
         text_size = len(bpe_tokens)
         max_size = model_max_length - 2
@@ -200,8 +213,20 @@ def main():
             draw_html_prompt(bpe_tokens[model_max_length-2:])
         st.text("\n")
         st.text("コピー用（改行を空白に変換、２つ以上の空白を１つに変換）")
-        reformat = reformat_prompt(prompt)
+        mode_replace = st.radio("プロンプトの変換", ["なし", "for AUTOMATIC1111: {}->()", "for NovelAI: ()->{}", "({[]})を消す"], horizontal=True)
+        if mode_replace == "for AUTOMATIC1111: {}->()":
+            prompt_replace = prompt.replace("{", "(").replace("}", ")")
+        elif mode_replace == "for NovelAI: ()->{}":
+            prompt_replace = prompt.replace("(", "{").replace(")", "}")
+        elif mode_replace == "({[]})を消す":
+            prompt_replace = prompt.replace("(", "").replace(")", "")
+            prompt_replace = prompt_replace.replace("{", "").replace("}", "")
+            prompt_replace = prompt_replace.replace("[", "").replace("]", "")
+        else:
+            prompt_replace = prompt
+        reformat = reformat_prompt(prompt_replace)
         st.code(reformat, language="")
+
         # if st.button("履歴に一時保存"):
         #     data = {
         #         "date": get_current_time(),

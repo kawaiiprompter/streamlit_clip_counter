@@ -1,3 +1,4 @@
 streamlit
 regex
 ftfy
+lark
