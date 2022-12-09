@@ -202,14 +202,14 @@ position: fixed;
 left: 0;
 bottom: 0;
 width: 100%;
-background-color: white;
-color: black;
+background-color: transparent;
+color: lightgrey;
 text-align: center;
-opacity: 0.5;
+opacity: 1;
 }
 </style>
 <div class="footer">
-<p>Developed by <a style='display: block; text-align: center;' href="https://twitter.com/kawaiiprompter" target="_blank">chili@kawaiiprompter</a></p>
+<p>Developed by <a href="https://twitter.com/kawaiiprompter" target="_blank">chili@kawaiiprompter</a></p>
 </div>
 """
 
