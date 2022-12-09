@@ -184,18 +184,55 @@ def draw_html_diff(text_diff):
     st.write("".join(html_list), unsafe_allow_html=True)
 
 
+footer = """<style>
+a:link , a:visited{
+color: blue;
+background-color: transparent;
+text-decoration: underline;
+}
+
+a:hover,  a:active {
+color: red;
+background-color: transparent;
+text-decoration: underline;
+}
+
+.footer {
+position: fixed;
+left: 0;
+bottom: 0;
+width: 100%;
+background-color: white;
+color: black;
+text-align: center;
+opacity: 0.5;
+}
+</style>
+<div class="footer">
+<p>Developed by <a style='display: block; text-align: center;' href="https://twitter.com/kawaiiprompter" target="_blank">chili@kawaiiprompter</a></p>
+</div>
+"""
+
 # 最大履歴
 max_history = 25
 
 def main():
+    st.set_page_config(page_title="Prompt Counter")
+    st.markdown(footer, unsafe_allow_html=True)
+
     # setting
-    mode_input = st.radio("モード", ["Original", "AUTOMATIC1111", "NovelAI"], horizontal=True)
+    mode_input = st.radio("プロンプトを実行するサービスを選択してください",
+        ["対象なし", "nijijourney", "AUTOMATIC1111", "NovelAI"],
+        horizontal=True)
     if mode_input == "NovelAI":
         add_quality_tags = st.checkbox("Add Quality Tags (+5)", value=True)
     else:
         add_quality_tags = False
-    prompt = st.text_area("プロンプトを入力（ボックス右下からサイズ変更可能）", height=130)
+    prompt = st.text_area("プロンプトを入力（ボックス右下からサイズ変更可能）", height=300)
+
+    mode_no_detail = st.checkbox("プロンプト分割の詳細を非表示", value=False)
     if prompt != "":
+        st.markdown("---")
         if mode_input == "AUTOMATIC1111":
             parsed_prompt = "".join([t for t, w in parse_prompt_attention(
                 prompt, "automatic"
@@ -210,30 +247,73 @@ def main():
             parsed_prompt = prompt
             max_size = 75
 
-        bpe_tokens = get_token(parsed_prompt)
-        text_size = len(bpe_tokens)
-        if add_quality_tags:
-            text_size += 5
-        st.text(f"token数: {text_size} / {max_size}")
-        draw_html_prompt(bpe_tokens[0:max_size])
-        if len(bpe_tokens) >= max_size:
-            st.text("--- over ---")
-            draw_html_prompt(bpe_tokens[max_size:])
-        st.text("\n")
-        st.text("コピー用（改行を空白に変換、２つ以上の空白を１つに変換）")
-        mode_replace = st.radio("プロンプトの変換", ["なし", "for AUTOMATIC1111: {}->()", "for NovelAI: ()->{}", "({[]})を消す"], horizontal=True)
-        if mode_replace == "for AUTOMATIC1111: {}->()":
-            prompt_replace = prompt.replace("{", "(").replace("}", ")")
-        elif mode_replace == "for NovelAI: ()->{}":
-            prompt_replace = prompt.replace("(", "{").replace(")", "}")
-        elif mode_replace == "({[]})を消す":
-            prompt_replace = prompt.replace("(", "").replace(")", "")
-            prompt_replace = prompt_replace.replace("{", "").replace("}", "")
-            prompt_replace = prompt_replace.replace("[", "").replace("]", "")
+        if mode_input == "nijijourney":
+            # 正規表現での分離
+            regex = r'::[+-]?(?:\d+\.?\d*|\.\d+)?'
+            prompt_list = [p for p in re.split(regex, parsed_prompt) if p.strip() != ""]
+
+            def convert_weight(w):
+                if w == "::":
+                    return 1.0
+                else:
+                    return float(w.replace("::", ""))
+
+            weight = [convert_weight(text) for text in re.findall(regex, parsed_prompt)]
+            
+            if len(prompt_list) > len(weight):
+                weight.append(1.0)
+            for k, prompt in enumerate(prompt_list):
+                bpe_tokens = get_token(prompt)
+                text_size = len(bpe_tokens)
+                if add_quality_tags:
+                    text_size += 5
+                st.text(f"{k+1}番目のプロンプト: weight={weight[k]}, token数: {text_size} / {max_size}")
+                if not mode_no_detail:
+                    draw_html_prompt(bpe_tokens[0:max_size])
+                    if len(bpe_tokens) >= max_size:
+                        st.text("--- over ---")
+                        draw_html_prompt(bpe_tokens[max_size:])
+                    st.markdown("---")
+            if mode_no_detail:
+                st.markdown("---")
+            
+            st.text("プロンプトのコピー（一番下のボックスの右のアイコンからコピーできます）")
+            add_size = st.radio("サイズを追加", ["なし", "--ar 2:3", "--ar 3:2"], horizontal=True)
+            add_quality = st.radio("クオリティを追加", ["なし", "--q 0.25", "--q 0.5", "--q 2"], horizontal=True)
+            reformat = reformat_prompt(parsed_prompt)
+            if add_size != "なし":
+                reformat = reformat + f" {add_size}"
+            if add_quality != "なし":
+                reformat = reformat + f" {add_quality}"
         else:
-            prompt_replace = prompt
-        reformat = reformat_prompt(prompt_replace)
+            bpe_tokens = get_token(parsed_prompt)
+            text_size = len(bpe_tokens)
+            if add_quality_tags:
+                text_size += 5
+            st.text(f"token数: {text_size} / {max_size}")
+            if not mode_no_detail:
+                draw_html_prompt(bpe_tokens[0:max_size])
+                if len(bpe_tokens) >= max_size:
+                    st.text("--- over ---")
+                    draw_html_prompt(bpe_tokens[max_size:])
+            st.markdown("---")
+
+            st.text("プロンプトのコピー（一番下のボックスの右のアイコンからコピーできます）")
+            mode_replace = st.radio("プロンプトの変換", ["なし", "for AUTOMATIC1111: {}->()", "for NovelAI: ()->{}", "({[]})を消す"], horizontal=True)
+            if mode_replace == "for AUTOMATIC1111: {}->()":
+                prompt_replace = prompt.replace("{", "(").replace("}", ")")
+            elif mode_replace == "for NovelAI: ()->{}":
+                prompt_replace = prompt.replace("(", "{").replace(")", "}")
+            elif mode_replace == "({[]})を消す":
+                prompt_replace = prompt.replace("(", "").replace(")", "")
+                prompt_replace = prompt_replace.replace("{", "").replace("}", "")
+                prompt_replace = prompt_replace.replace("[", "").replace("]", "")
+            else:
+                prompt_replace = prompt
+            reformat = reformat_prompt(prompt_replace)
         st.code(reformat, language="")
+
+        # st.text("デフォルトで改行を空白に変換、２つ以上の空白を１つに変換しています")
 
         # if st.button("履歴に一時保存"):
         #     data = {
