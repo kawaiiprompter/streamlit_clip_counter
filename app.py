@@ -201,11 +201,13 @@ text-decoration: underline;
 position: fixed;
 left: 0;
 bottom: 0;
+height: 25px;
 width: 100%;
-background-color: transparent;
+font_size="0.8rem";
+background-color: grey;
 color: lightgrey;
 text-align: center;
-opacity: 1;
+z-index: 100;
 }
 </style>
 <div class="footer">
@@ -258,19 +260,20 @@ def main():
                 else:
                     return float(w.replace("::", ""))
 
-            weight = [convert_weight(text) for text in re.findall(regex, parsed_prompt)]
+            weight_str_list = [weight for weight in re.findall(regex, parsed_prompt)]
+            weight_list = [convert_weight(weight) for weight in weight_str_list]
             
-            if len(prompt_list) > len(weight):
-                weight.append(1.0)
+            if len(prompt_list) > len(weight_list):
+                weight_list.append(1.0)
+            text_size_list = []
             for k, prompt in enumerate(prompt_list):
                 bpe_tokens = get_token(prompt)
                 text_size = len(bpe_tokens)
-                if add_quality_tags:
-                    text_size += 5
-                st.text(f"{k+1}番目のプロンプト: weight={weight[k]}, token数: {text_size} / {max_size}")
+                text_size_list.append(text_size)
+                st.text(f"{k+1}番目のプロンプト: weight={weight_list[k]}, token数: {text_size} / {max_size}")
                 if not mode_no_detail:
                     draw_html_prompt(bpe_tokens[0:max_size])
-                    if len(bpe_tokens) >= max_size:
+                    if len(bpe_tokens) > max_size:
                         st.text("--- over ---")
                         draw_html_prompt(bpe_tokens[max_size:])
                     st.markdown("---")
@@ -280,6 +283,14 @@ def main():
             st.text("プロンプトのコピー（一番下のボックスの右のアイコンからコピーできます）")
             add_size = st.radio("サイズを追加", ["なし", "--ar 2:3", "--ar 3:2"], horizontal=True)
             add_quality = st.radio("クオリティを追加", ["なし", "--q 0.25", "--q 0.5", "--q 2"], horizontal=True)
+            fill_word = st.radio("次の文字で75トークンを埋める", ["なし", ";", ",", "+"], horizontal=True)
+            if fill_word != "なし":
+                prompt_list_new = []
+                for p, w, s in zip(prompt_list, weight_list, text_size_list):
+                    if s < max_size:
+                        p = p + f" {fill_word}" * (max_size - s)
+                    prompt_list_new.append(f"{p}::{w}")
+                parsed_prompt = " ".join(prompt_list_new)
             reformat = reformat_prompt(parsed_prompt)
             if add_size != "なし":
                 reformat = reformat + f" {add_size}"
