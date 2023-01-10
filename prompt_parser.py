@@ -319,7 +319,7 @@ def parse_prompt_attention(text, mode):
      ['.', 1.1]]
     """
 
-    if mode == "automatic":
+    if mode == "AUTOMATIC1111":
         weaken_bos = '('
         emphasis_bos = '['
         weaken_eos = ')'
