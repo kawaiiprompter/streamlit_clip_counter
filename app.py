@@ -167,7 +167,7 @@ def main():
     col0, col1 = st.columns(2)
     mode_no_detail = col0.checkbox("プロンプト分割の詳細を非表示", value=False)
     if mode_input != "nijijourney":
-        mode_split_75 = col1.checkbox("75文字ごとに分割", value=True)
+        mode_split_75 = col1.checkbox("75トークンごとに分割", value=True)
 
     if prompt != "":
         st.markdown("---")
